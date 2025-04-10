@@ -1,6 +1,7 @@
 package com.pedropathing.localization.localizers;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.pedropathing.follower.RobotMapUtil;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
@@ -69,8 +70,8 @@ public class TwoWheelLocalizer extends Localizer {
      *
      * @param map the HardwareMap
      */
-    public TwoWheelLocalizer(HardwareMap map) {
-        this(map, new Pose());
+    public TwoWheelLocalizer(RobotMapUtil robotMapUtil) {
+        this(robotMapUtil, new Pose());
     }
 
     /**
@@ -80,17 +81,14 @@ public class TwoWheelLocalizer extends Localizer {
      * @param map the HardwareMap
      * @param setStartPose the Pose to start from
      */
-    public TwoWheelLocalizer(HardwareMap map, Pose setStartPose) {
+    public TwoWheelLocalizer(RobotMapUtil robotMapUtil, Pose setStartPose) {
         FORWARD_TICKS_TO_INCHES = forwardTicksToInches;
         STRAFE_TICKS_TO_INCHES = strafeTicksToInches;
 
         forwardEncoderPose = new Pose(0, forwardY, 0);
         strafeEncoderPose = new Pose(strafeX, 0, Math.toRadians(90));
 
-        hardwareMap = map;
-
-        imu = hardwareMap.get(IMU.class, IMU_HardwareMapName);
-        imu.initialize(new IMU.Parameters(IMU_Orientation));
+        imu = robotMapUtil.getIMU();
 
         forwardEncoder = new Encoder(hardwareMap.get(DcMotorEx.class, forwardEncoder_HardwareMapName));
         strafeEncoder = new Encoder(hardwareMap.get(DcMotorEx.class, strafeEncoder_HardwareMapName));

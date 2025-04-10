@@ -1,5 +1,6 @@
 import com.android.builder.symbols.exportToCompiledJava
 import org.jetbrains.dokka.plugability.configuration
+import org.jetbrains.kotlin.ir.backend.js.compile
 
 plugins {
 	id("org.jetbrains.kotlin.android") version "1.9.20"
@@ -47,6 +48,7 @@ repositories {
 	mavenCentral()
 	google()
 	maven("https://maven.brott.dev/")
+	maven("https://jitpack.io")
 }
 
 android {
@@ -80,6 +82,9 @@ dependencies {
 	compileOnly("org.firstinspires.ftc:RobotServer:10.2.0")
 	compileOnly("org.firstinspires.ftc:OnBotJava:10.2.0")
 	compileOnly("com.acmerobotics.dashboard:dashboard:0.4.16")
+	compileOnly("com.github.theinventors-ftc:InventorsFtcLib:e9d08f3")
+	compileOnly("org.ftclib.ftclib:core:2.1.1")
+	compileOnly("org.firstinspires.ftc:Vision:10.2.0")
 
 	implementation("org.apache.commons:commons-math3:3.6.1")
 	dokkaHtmlPlugin("org.jetbrains.dokka:kotlin-as-java-plugin:1.9.20")
@@ -92,8 +97,8 @@ publishing {
 	publications {
 		register<MavenPublication>("release") {
 			groupId = "com.pedropathing"
-			artifactId = "pedro"
-			version = "1.0.9"
+			artifactId = "local"
+			version = "1.0.9-local"
 
 			afterEvaluate {
 				from(components["release"])

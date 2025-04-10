@@ -32,6 +32,7 @@ import android.util.Log;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.arcrobotics.ftclib.hardware.motors.Motor;
 import com.pedropathing.util.Constants;
 import com.pedropathing.util.CustomFilteredPIDFCoefficients;
 import com.pedropathing.util.CustomPIDFCoefficients;
@@ -42,6 +43,8 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.inventors.ftc.robotbase.hardware.MotorExEx;
+
 import com.pedropathing.localization.Localizer;
 import com.pedropathing.localization.Pose;
 import com.pedropathing.localization.PoseUpdater;
@@ -63,7 +66,6 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 /**
  * This is the Follower class. It handles the actual following of the paths and all the on-the-fly
  * calculations that are relevant for movement.
@@ -75,13 +77,13 @@ import java.util.List;
  */
 @Config
 public class Follower {
-    private HardwareMap hardwareMap;
+    private MotorExEx
+        leftFront,
+        leftRear,
+        rightFront,
+        rightRear;
 
-    private DcMotorEx leftFront;
-    private DcMotorEx leftRear;
-    private DcMotorEx rightFront;
-    private DcMotorEx rightRear;
-    private List<DcMotorEx> motors;
+    private List<MotorExEx> motors;
 
     private DriveVectorScaler driveVectorScaler;
 
@@ -175,25 +177,14 @@ public class Follower {
 
     private ElapsedTime zeroVelocityDetectedTimer;
 
-    /**
-     * This creates a new Follower given a HardwareMap.
-     * @param hardwareMap HardwareMap required
-     */
-    public Follower(HardwareMap hardwareMap, Class<?> FConstants, Class<?> LConstants) {
-        this.hardwareMap = hardwareMap;
+    public Follower(RobotMapUtil robotMap, Class<?> FConstants, Class<?> LConstants) {
         setupConstants(FConstants, LConstants);
-        initialize();
+        initialize(robotMap);
     }
 
-    /**
-     * This creates a new Follower given a HardwareMap and a localizer.
-     * @param hardwareMap HardwareMap required
-     * @param localizer the localizer you wish to use
-     */
-    public Follower(HardwareMap hardwareMap, Localizer localizer, Class<?> FConstants, Class<?> LConstants) {
-        this.hardwareMap = hardwareMap;
+    public Follower(RobotMapUtil robotMap, Localizer localizer, Class<?> FConstants, Class<?> LConstants) {
         setupConstants(FConstants, LConstants);
-        initialize(localizer);
+        initialize(localizer, robotMap);
     }
 
     /**
@@ -226,29 +217,19 @@ public class Follower {
      * initialized and their behavior is set, and the variables involved in approximating first and
      * second derivatives for teleop are set.
      */
-    public void initialize() {
-        poseUpdater = new PoseUpdater(hardwareMap);
+    public void initialize(RobotMapUtil robotMapUtil) {
+        poseUpdater = new PoseUpdater(robotMapUtil);
         driveVectorScaler = new DriveVectorScaler(FollowerConstants.frontLeftVector);
 
-        voltageSensor = hardwareMap.voltageSensor.iterator().next();
+        voltageSensor = robotMapUtil.getVoltageSensor();
         voltageTimer.reset();
 
-        leftFront = hardwareMap.get(DcMotorEx.class, leftFrontMotorName);
-        leftRear = hardwareMap.get(DcMotorEx.class, leftRearMotorName);
-        rightRear = hardwareMap.get(DcMotorEx.class, rightRearMotorName);
-        rightFront = hardwareMap.get(DcMotorEx.class, rightFrontMotorName);
-        leftFront.setDirection(leftFrontMotorDirection);
-        leftRear.setDirection(leftRearMotorDirection);
-        rightFront.setDirection(rightFrontMotorDirection);
-        rightRear.setDirection(rightRearMotorDirection);
+        leftFront = robotMapUtil.getFrontLeftMotor();
+        leftRear = robotMapUtil.getRearLeftMotor();
+        rightRear = robotMapUtil.getRearRightMotor();
+        rightFront = robotMapUtil.getFrontRightMotor();
 
         motors = Arrays.asList(leftFront, leftRear, rightFront, rightRear);
-
-        for (DcMotorEx motor : motors) {
-            MotorConfigurationType motorConfigurationType = motor.getMotorType().clone();
-            motorConfigurationType.setAchieveableMaxRPMFraction(1.0);
-            motor.setMotorType(motorConfigurationType);
-        }
 
         setMotorsToFloat();
 
@@ -264,30 +245,19 @@ public class Follower {
      * second derivatives for teleop are set.
      * @param localizer the localizer you wish to use
      */
-
-    public void initialize(Localizer localizer) {
-        poseUpdater = new PoseUpdater(hardwareMap, localizer);
+    public void initialize(Localizer localizer, RobotMapUtil robotMapUtil) {
+        poseUpdater = new PoseUpdater(robotMapUtil, localizer);
         driveVectorScaler = new DriveVectorScaler(FollowerConstants.frontLeftVector);
 
-        voltageSensor = hardwareMap.voltageSensor.iterator().next();
+        voltageSensor = robotMapUtil.getVoltageSensor();
         voltageTimer.reset();
 
-        leftFront = hardwareMap.get(DcMotorEx.class, leftFrontMotorName);
-        leftRear = hardwareMap.get(DcMotorEx.class, leftRearMotorName);
-        rightRear = hardwareMap.get(DcMotorEx.class, rightRearMotorName);
-        rightFront = hardwareMap.get(DcMotorEx.class, rightFrontMotorName);
-        leftFront.setDirection(leftFrontMotorDirection);
-        leftRear.setDirection(leftRearMotorDirection);
-        rightFront.setDirection(rightFrontMotorDirection);
-        rightRear.setDirection(rightRearMotorDirection);
+        leftFront = robotMapUtil.getFrontLeftMotor();
+        leftRear = robotMapUtil.getRearLeftMotor();
+        rightRear = robotMapUtil.getRearRightMotor();
+        rightFront = robotMapUtil.getFrontRightMotor();
 
         motors = Arrays.asList(leftFront, leftRear, rightFront, rightRear);
-
-        for (DcMotorEx motor : motors) {
-            MotorConfigurationType motorConfigurationType = motor.getMotorType().clone();
-            motorConfigurationType.setAchieveableMaxRPMFraction(1.0);
-            motor.setMotorType(motorConfigurationType);
-        }
 
         setMotorsToFloat();
 
@@ -304,8 +274,8 @@ public class Follower {
      * This sets the motors to the zero power behavior of brake.
      */
     private void setMotorsToBrake() {
-        for (DcMotorEx motor : motors) {
-            motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        for (MotorExEx motor : motors) {
+            motor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
         }
     }
 
@@ -313,8 +283,8 @@ public class Follower {
      * This sets the motors to the zero power behavior of float.
      */
     private void setMotorsToFloat() {
-        for (DcMotorEx motor : motors) {
-            motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        for (MotorExEx motor : motors) {
+            motor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.FLOAT);
         }
     }
 
@@ -621,13 +591,13 @@ public class Follower {
                     drivePowers = driveVectorScaler.getDrivePowers(MathFunctions.scalarMultiplyVector(getTranslationalCorrection(), holdPointTranslationalScaling), MathFunctions.scalarMultiplyVector(getHeadingVector(), holdPointHeadingScaling), new Vector(), poseUpdater.getPose().getHeading());
 
                     for (int i = 0; i < motors.size(); i++) {
-                        if (Math.abs(motors.get(i).getPower() - drivePowers[i]) > FollowerConstants.motorCachingThreshold) {
+                        if (Math.abs(motors.get(i).getVelocity() - drivePowers[i]) > FollowerConstants.motorCachingThreshold) {
                             double voltageNormalized = getVoltageNormalized();
 
                             if (useVoltageCompensationInAuto) {
-                                motors.get(i).setPower(drivePowers[i] * voltageNormalized);
+                                motors.get(i).set(drivePowers[i] * voltageNormalized);
                             } else {
-                                motors.get(i).setPower(drivePowers[i]);
+                                motors.get(i).set(drivePowers[i]);
                             }
                         }
                     }
@@ -645,13 +615,13 @@ public class Follower {
                         drivePowers = driveVectorScaler.getDrivePowers(getCorrectiveVector(), getHeadingVector(), getDriveVector(), poseUpdater.getPose().getHeading());
 
                         for (int i = 0; i < motors.size(); i++) {
-                            if (Math.abs(motors.get(i).getPower() - drivePowers[i]) > FollowerConstants.motorCachingThreshold) {
+                            if (Math.abs(motors.get(i).getVelocity() - drivePowers[i]) > FollowerConstants.motorCachingThreshold) {
                                 double voltageNormalized = getVoltageNormalized();
 
                                 if (useVoltageCompensationInAuto) {
-                                    motors.get(i).setPower(drivePowers[i] * voltageNormalized);
+                                    motors.get(i).set(drivePowers[i] * voltageNormalized);
                                 } else {
-                                    motors.get(i).setPower(drivePowers[i]);
+                                    motors.get(i).set(drivePowers[i]);
                                 }
                             }
                         }
@@ -728,13 +698,13 @@ public class Follower {
             drivePowers = driveVectorScaler.getDrivePowers(getCentripetalForceCorrection(), teleopHeadingVector, teleopDriveVector, poseUpdater.getPose().getHeading());
 
             for (int i = 0; i < motors.size(); i++) {
-                if (Math.abs(motors.get(i).getPower() - drivePowers[i]) > FollowerConstants.motorCachingThreshold) {
+                if (Math.abs(motors.get(i).getVelocity() - drivePowers[i]) > FollowerConstants.motorCachingThreshold) {
                     double voltageNormalized = getVoltageNormalized();
 
                     if (useVoltageCompensationInTeleOp) {
-                        motors.get(i).setPower(drivePowers[i] * voltageNormalized);
+                        motors.get(i).set(drivePowers[i] * voltageNormalized);
                     } else {
-                        motors.get(i).setPower(drivePowers[i]);
+                        motors.get(i).set(drivePowers[i]);
                     }
                 }
             }
@@ -877,7 +847,7 @@ public class Follower {
         teleopHeadingVector = new Vector();
 
         for (int i = 0; i < motors.size(); i++) {
-            motors.get(i).setPower(0);
+            motors.get(i).set(0);
         }
 
         zeroVelocityDetectedTimer = null;

@@ -350,4 +350,6 @@ public class FollowerConstants {
      *  In Radians
      *  Default Value: 0.01 */
     public static double turnHeadingErrorThreshold = 0.01;
+
+    public static double APPROXIMATION_STEPS_FUTURE = 10;
 }
